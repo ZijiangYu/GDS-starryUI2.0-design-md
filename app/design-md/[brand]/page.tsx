@@ -11,7 +11,12 @@ import { TypographyBoard } from "@/components/typography-board";
 import { renderDesignMd } from "@/data/design-md";
 import { spacingUsage } from "@/data/spacing-usage";
 import { getColorUsage, getRadiusUsage, getTypographyUsage } from "@/data/token-usage";
-import { getBrandTokens, isBrandKey } from "@/data/tokens/brands";
+import { getBrandTokens, isBrandKey, brands } from "@/data/tokens/brands";
+import type { BrandKey } from "@/data/tokens/types";
+
+export async function generateStaticParams() {
+  return brands.map((b) => ({ brand: b.key }));
+}
 
 export default async function BrandPage({ params }: { params: Promise<{ brand: string }> }) {
   const { brand } = await params;
