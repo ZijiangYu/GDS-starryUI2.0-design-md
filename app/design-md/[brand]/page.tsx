@@ -1,79 +1,116 @@
 import { notFound } from "next/navigation";
-import { brands, getBrandTokens } from "@/data/tokens/brands";
+import { BrandTabs } from "@/components/brand-tabs";
+import { CopyButton } from "@/components/copy-button";
+import { ComponentInteractionBoard } from "@/components/component-interaction-board";
+import { RadiusBoard } from "@/components/radius-board";
+import { SemanticColorTable } from "@/components/semantic-color-table";
+import { ShadowBoard } from "@/components/shadow-board";
+import { SpacingBoard } from "@/components/spacing-board";
+import { TocNav } from "@/components/toc-nav";
+import { TypographyBoard } from "@/components/typography-board";
 import { renderDesignMd } from "@/data/design-md";
-import type { BrandKey } from "@/data/tokens/types";
+import { spacingUsage } from "@/data/spacing-usage";
+import { getColorUsage, getRadiusUsage, getTypographyUsage } from "@/data/token-usage";
+import { getBrandTokens, isBrandKey } from "@/data/tokens/brands";
 
-interface PageProps {
-  params: Promise<{ brand: string }>;
-}
-
-const validBrands: BrandKey[] = ["zeekr", "lynkco", "aftersales", "geely"];
-
-export async function generateStaticParams() {
-  return validBrands.map((brand) => ({ brand }));
-}
-
-export async function generateMetadata({ params }: PageProps) {
-  const { brand } = await params;
-  const tokens = getBrandTokens(brand as BrandKey);
-  return {
-    title: `Starry UI 2.0 - ${tokens.label}`,
-  };
-}
-
-export default async function DesignMdPage({ params }: PageProps) {
+export default async function BrandPage({ params }: { params: Promise<{ brand: string }> }) {
   const { brand } = await params;
 
-  if (!validBrands.includes(brand as BrandKey)) {
+  if (!isBrandKey(brand)) {
     notFound();
   }
 
-  const tokens = getBrandTokens(brand as BrandKey);
-  const designMd = renderDesignMd(brand as BrandKey);
+  const tokens = getBrandTokens(brand);
+  const markdown = renderDesignMd(brand);
+  const installCommand = "npx @starry-ui/design-md add --brand " + brand;
+  const colorUsage = getColorUsage(brand);
+  const radiusUsage = getRadiusUsage(brand);
+  const typographyUsage = getTypographyUsage(brand);
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">✦</span>
-            <span className="font-semibold text-lg">Starry UI 2.0</span>
-            <span className="text-gray-400">|</span>
-            <span className="text-brand">{tokens.label}</span>
+    <main className="shell doc" style={{ ["--brand-primary" as string]: tokens.colors.brandPrimary }}>
+      <header className="topbar">
+        <div className="topbar-left">Starry UI 2.0</div>
+        <div className="topbar-center">
+          <BrandTabs active={brand} />
+        </div>
+        <div className="topbar-right">
+          <div className="topbar-actions">
+            <div className="brand-pill large">
+              <span className="dot" />
+              <span>{tokens.label}</span>
+            </div>
+            <CopyButton text={markdown} label="复制当前品牌 DESIGN.md" />
           </div>
-
-          {/* Brand Switcher */}
-          <nav className="flex gap-2">
-            {validBrands.map((b) => {
-              const t = getBrandTokens(b);
-              const isActive = b === brand;
-              return (
-                <a
-                  key={b}
-                  href={`/design-md/${b}`}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-brand text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                  style={isActive ? { backgroundColor: tokens.colors.brandPrimary } : {}}
-                >
-                  {t.label}
-                </a>
-              );
-            })}
-          </nav>
         </div>
       </header>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
-            {designMd}
-          </pre>
+      <div className="doc-layout">
+        <div className="doc-main">
+          <section id="quickstart" className="card hero anchor">
+            <h2 className="card-title">用法</h2>
+            <div className="codebox">
+              <div className="codebox-title">安装命令</div>
+              <code>{installCommand}</code>
+              <CopyButton text={installCommand} label="复制命令" />
+            </div>
+          </section>
+
+          <section id="colors" className="card anchor">
+            <h2 className="card-title">颜色与使用场景</h2>
+            <p className="meta">来源节点: {tokens.sourceNodeId} / 同步时间: {tokens.lastSyncedAt}</p>
+            <div className="usage-wrap">
+              <SemanticColorTable items={colorUsage} />
+            </div>
+          </section>
+
+          <section id="typography" className="card anchor">
+            <h2 className="card-title">字体与使用场景</h2>
+            <div className="usage-wrap">
+              <TypographyBoard items={typographyUsage} />
+            </div>
+          </section>
+
+          <section id="radius" className="card anchor">
+            <h2 className="card-title">圆角与使用场景</h2>
+            <RadiusBoard items={radiusUsage} />
+          </section>
+
+          <section id="spacing" className="card anchor">
+            <h2 className="card-title">间距与使用场景</h2>
+            <SpacingBoard items={spacingUsage} />
+          </section>
+
+          <section id="components" className="card anchor">
+            <h2 className="card-title">组件模块</h2>
+            <ComponentInteractionBoard brand={tokens} />
+          </section>
+
+          <section id="shadow" className="card anchor">
+            <h2 className="card-title">投影层级效果</h2>
+            <ShadowBoard brand={tokens} />
+          </section>
+
+          <section id="markdown" className="card markdown anchor">
+            <h2 className="card-title">DESIGN.md 预览</h2>
+            <article className="md-box">
+              <pre className="pre">{markdown}</pre>
+            </article>
+          </section>
         </div>
+
+        <TocNav
+          items={[
+            { id: "quickstart", label: "用法" },
+            { id: "colors", label: "颜色" },
+            { id: "typography", label: "字体" },
+            { id: "radius", label: "圆角" },
+            { id: "spacing", label: "间距" },
+            { id: "components", label: "组件" },
+            { id: "shadow", label: "投影" },
+            { id: "markdown", label: "MD文件" }
+          ]}
+        />
       </div>
     </main>
   );
